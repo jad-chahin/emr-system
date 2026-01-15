@@ -1,0 +1,36 @@
+{
+  "name": "emr-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fullcalendar/core": "^6.1.11",
+    "@fullcalendar/daygrid": "^6.1.11",
+    "@fullcalendar/list": "^6.1.11",
+    "@fullcalendar/timegrid": "^6.1.11",
+    "@popperjs/core": "^2.11.8",
+    "@tailwindcss/vite": "^4.1.18",
+    "axios": "^1.6.8",
+    "emailjs-com": "^3.2.0",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.0",
+    "pinia": "^2.1.7",
+    "tailwindcss": "^4.1.18",
+    "v-calendar": "^3.1.2",
+    "vue": "^3.4.21",
+    "vue-multiselect": "^3.0.0",
+    "vue-router": "^4.3.0",
+    "vue-sidebar-menu": "^5.3.1",
+    "vuex": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "sass": "^1.77.2",
+    "vite": "^5.2.11"
+  }
+}

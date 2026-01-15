@@ -1,0 +1,27 @@
+{
+  "name": "EMR",
+  "version": "1.0.0",
+  "description": "A brief description of your application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.2",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.17.1",
+    "express-openid-connect": "^2.5.0",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.0.12",
+    "morgan": "^1.10.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.13",
+    "twilio": "^5.1.1",
+    "v-calendar": "^2.4.2",
+    "vue-multiselect": "^3.0.0"
+  }
+}
