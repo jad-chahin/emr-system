@@ -1,5 +1,8 @@
 import { computed, ref } from 'vue'
 
+const rawApiUrl = import.meta.env.VITE_API_URL || ''
+const API_URL = rawApiUrl.replace(/\/$/, '')
+
 const token = ref(localStorage.getItem('token'))
 const user = ref(null)
 const loading = ref(false)
@@ -34,7 +37,7 @@ const loadMe = async () => {
 
   loading.value = true
   try {
-    const response = await fetch('/api/auth/me', {
+    const response = await fetch(`${API_URL}/user/me`, {
       headers: {
         Authorization: `Bearer ${currentToken}`,
       },

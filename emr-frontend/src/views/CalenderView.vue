@@ -269,11 +269,16 @@ export default {
       getAppointments(date.value);
     });
 
+    function normalizeDate(value) {
+      return value instanceof Date && !Number.isNaN(value.getTime()) ? value : new Date();
+    }
+
     async function getAppointments(date) {
+      const safeDate = normalizeDate(date);
       try {
         const response = await axios.get(`${API_URL}/calendar/appointments`, {
           params: {
-            date: date.toLocaleDateString()
+            date: safeDate.toLocaleDateString()
           },
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
@@ -306,7 +311,8 @@ export default {
     }
 
     async function makeAppointment(date) {
-      info.value.date = date.toLocaleDateString();
+      const safeDate = normalizeDate(date);
+      info.value.date = safeDate.toLocaleDateString();
       const selected = patientList.value?.find((p) => p.patientID === selectedPatientId.value);
       if (selected) {
         hasErrorMessage.value = false;
@@ -403,7 +409,7 @@ If this was not you, please log into the EMR application and delete this appoint
     }
 
     function formatDate(date) {
-      return date.toLocaleDateString();
+      return normalizeDate(date).toLocaleDateString();
     }
 
     const formattedDate = computed(() => formatDate(date.value));
