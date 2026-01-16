@@ -285,7 +285,10 @@ export default {
 
         appointments.value = response.data;
         appointments.value.forEach(async (a) => {
-          let id = a.patient;
+          if (typeof a.patient !== 'string') {
+            return;
+          }
+          const id = a.patient;
           a.patient = await axios.get(`${API_URL}/patients/${id}`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {}
           });

@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 
-const rawApiUrl = import.meta.env.VITE_API_URL || ''
-const API_URL = rawApiUrl.replace(/\/$/, '')
+const API_URL = import.meta.env.VITE_API_URL
 
 const token = ref(localStorage.getItem('token'))
 const user = ref(null)
