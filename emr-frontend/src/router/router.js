@@ -29,14 +29,14 @@ const routes = [
     meta: { layout: 'suite', requiresAuth: true },
     children: [
       { path: '', redirect: '/app/dashboard' },
-      { path: 'dashboard', component: Dashboard },
-      { path: 'patients', component: Patients },
+      { path: 'dashboard', component: Dashboard, meta: { roles: ['doctor'] } },
+      { path: 'patients', component: Patients, meta: { roles: ['doctor'] } },
       { path: 'patients/lookup', redirect: '/app/patients' },
-      { path: 'calendar', component: Calendar, name: 'Calendar' },
-      { path: 'medicine', component: MedicineDatabase },
-      { path: 'test-dashboard', component: Tests },
-      { path: 'patients/:patient', name: 'PatientProfile', component: PatientProfile },
-      { path: 'patients/add-treatment/:patient', name: 'AddTreatment', component: AddTreatment },
+      { path: 'calendar', component: Calendar, name: 'Calendar', meta: { roles: ['doctor'] } },
+      { path: 'medicine', component: MedicineDatabase, meta: { roles: ['doctor'] } },
+      { path: 'test-dashboard', component: Tests, meta: { roles: ['doctor'] } },
+      { path: 'patients/:patient', name: 'PatientProfile', component: PatientProfile, meta: { roles: ['doctor', 'patient'], patientSelf: true } },
+      { path: 'patients/add-treatment/:patient', name: 'AddTreatment', component: AddTreatment, meta: { roles: ['doctor'] } },
     ],
   },
 
@@ -56,25 +56,70 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
-  const hasToken = localStorage.getItem('token')
-  if (to.path === '/' && hasToken) {
-    return { path: '/app/dashboard' }
+const readStoredUser = () => {
+  const raw = localStorage.getItem('user')
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
   }
-  if ((to.path === '/login' || to.path === '/register') && hasToken) {
-    return { path: '/app/dashboard' }
+}
+
+const decodeRoleFromToken = (token) => {
+  if (!token) return null
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4)
+    const payload = JSON.parse(atob(padded))
+    return payload?.role || null
+  } catch {
+    return null
+  }
+}
+
+const resolveAuthedHome = (role, userId) => {
+  if (role === 'patient' && userId) return `/app/patients/${userId}`
+  if (role === 'patient') return '/search-patient'
+  return '/app/dashboard'
+}
+
+router.beforeEach((to) => {
+  const token = localStorage.getItem('token')
+  const storedUser = readStoredUser()
+  const role = storedUser?.role || decodeRoleFromToken(token)
+  const userId = storedUser?._id || storedUser?.id
+  const authedHome = resolveAuthedHome(role, userId)
+
+  if (to.path === '/' && token) {
+    return { path: authedHome }
+  }
+  if ((to.path === '/login' || to.path === '/register') && token) {
+    return { path: authedHome }
   }
 
   const requiresAuth = to.matched.some((record) => record.meta?.requiresAuth)
   if (!requiresAuth) return true
 
-  const token = localStorage.getItem('token')
-  if (token) return true
-
-  return {
-    path: '/login',
-    query: { redirect: to.fullPath },
+  if (!token) {
+    return {
+      path: '/login',
+      query: { redirect: to.fullPath },
+    }
   }
+
+  const allowedRoles = to.matched.flatMap((record) => record.meta?.roles || [])
+  if (allowedRoles.length > 0 && (!role || !allowedRoles.includes(role))) {
+    return { path: authedHome }
+  }
+
+  if (role === 'patient' && to.meta?.patientSelf && userId && to.params?.patient !== userId) {
+    return { path: `/app/patients/${userId}` }
+  }
+
+  return true
 })
 
 export default router

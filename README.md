@@ -16,9 +16,9 @@ npm run dev
 
 Backend:
 ```
-cd EMR/server
+cd emr-backend
 npm install
-npm run dev
+node server/index.js
 ```
 
 ## Environment

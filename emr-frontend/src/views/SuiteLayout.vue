@@ -123,10 +123,16 @@ const displayName = computed(() => {
   const composedName = [details.firstName, details.lastName].filter(Boolean).join(' ')
   return details.displayName || details.name || composedName || details.email || 'Account'
 })
+const userRole = computed(() => user.value?.role || 'doctor')
+const patientProfilePath = computed(() => {
+  const id = user.value?._id || user.value?.id
+  return id ? `/app/patients/${id}` : '/search-patient'
+})
 
 const handleLogout = () => {
+  const role = userRole.value
   logout()
-  router.push('/login')
+  router.push(role === 'patient' ? '/search-patient' : '/login')
 }
 
 const applyThemeClass = () => {
@@ -142,56 +148,72 @@ const toggleTheme = () => {
   applyThemeClass()
 }
 
-const navItems = computed(() => [
-  {
-    label: 'Dashboard',
-    path: '/app/dashboard',
-    icon: () =>
-      h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
-        h('path', {
-          d: 'M4 13h7V4H4v9Zm9 7h7V11h-7v9ZM4 20h7v-5H4v5Zm9-11h7V4h-7v5Z',
-          fill: 'currentColor',
-          opacity: '0.9',
-        }),
-      ]),
-  },
-  {
-    label: 'Patients',
-    path: '/app/patients',
-    icon: () =>
-      h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
-        h('path', { d: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z', fill: 'currentColor', opacity: '0.9' }),
-        h('path', { d: 'M4 20a8 8 0 0 1 16 0', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
-      ]),
-  },
-  {
-    label: 'Appointments',
-    path: '/app/calendar',
-    icon: () =>
-      h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
-        h('path', { d: 'M7 3v3M17 3v3', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
-        h('path', { d: 'M4 8h16', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
-        h('path', {
-          d: 'M6 6h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z',
-          stroke: 'currentColor',
-          'stroke-width': '2',
-        }),
-      ]),
-  },
-  {
-    label: 'Medicine DB',
-    path: '/app/medicine',
-    icon: () =>
-      h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
-        h('path', { d: 'M8 7h8M8 11h8M8 15h5', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
-        h('path', {
-          d: 'M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
-          stroke: 'currentColor',
-          'stroke-width': '2',
-        }),
-      ]),
-  },
-])
+const navItems = computed(() => {
+  if (userRole.value === 'patient') {
+    return [
+      {
+        label: 'My Profile',
+        path: patientProfilePath.value,
+        icon: () =>
+          h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
+            h('path', { d: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z', fill: 'currentColor', opacity: '0.9' }),
+            h('path', { d: 'M4 20a8 8 0 0 1 16 0', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+          ]),
+      },
+    ]
+  }
+
+  return [
+    {
+      label: 'Dashboard',
+      path: '/app/dashboard',
+      icon: () =>
+        h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
+          h('path', {
+            d: 'M4 13h7V4H4v9Zm9 7h7V11h-7v9ZM4 20h7v-5H4v5Zm9-11h7V4h-7v5Z',
+            fill: 'currentColor',
+            opacity: '0.9',
+          }),
+        ]),
+    },
+    {
+      label: 'Patients',
+      path: '/app/patients',
+      icon: () =>
+        h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
+          h('path', { d: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z', fill: 'currentColor', opacity: '0.9' }),
+          h('path', { d: 'M4 20a8 8 0 0 1 16 0', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+        ]),
+    },
+    {
+      label: 'Appointments',
+      path: '/app/calendar',
+      icon: () =>
+        h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
+          h('path', { d: 'M7 3v3M17 3v3', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+          h('path', { d: 'M4 8h16', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+          h('path', {
+            d: 'M6 6h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z',
+            stroke: 'currentColor',
+            'stroke-width': '2',
+          }),
+        ]),
+    },
+    {
+      label: 'Medicine DB',
+      path: '/app/medicine',
+      icon: () =>
+        h('svg', { class: 'h-5 w-5', viewBox: '0 0 24 24', fill: 'none', 'aria-hidden': 'true' }, [
+          h('path', { d: 'M8 7h8M8 11h8M8 15h5', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round' }),
+          h('path', {
+            d: 'M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
+            stroke: 'currentColor',
+            'stroke-width': '2',
+          }),
+        ]),
+    },
+  ]
+})
 
 const isActive = (path) => route.path === path || route.path.startsWith(`${path}/`)
 

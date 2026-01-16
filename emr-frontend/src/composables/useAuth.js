@@ -24,6 +24,19 @@ const clearAuth = () => {
   user.value = null
 }
 
+const decodeJwtPayload = (tokenValue) => {
+  if (!tokenValue) return null
+  const parts = tokenValue.split('.')
+  if (parts.length < 2) return null
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4)
+    return JSON.parse(atob(padded))
+  } catch {
+    return null
+  }
+}
+
 const loadMe = async () => {
   const currentToken = localStorage.getItem('token')
   token.value = currentToken
@@ -34,9 +47,14 @@ const loadMe = async () => {
     return null
   }
 
+  const payload = decodeJwtPayload(currentToken)
+  const role = payload?.role || null
+  const patientId = payload?.id || payload?.sub
+
   loading.value = true
   try {
-    const response = await fetch(`${API_URL}/user/me`, {
+    const endpoint = role === 'patient' && patientId ? `/patients/${patientId}` : '/user/me'
+    const response = await fetch(`${API_URL}${endpoint}`, {
       headers: {
         Authorization: `Bearer ${currentToken}`,
       },

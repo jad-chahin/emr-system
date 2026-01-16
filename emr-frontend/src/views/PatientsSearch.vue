@@ -223,6 +223,10 @@ export default {
     }
   },
   methods: {
+    authHeaders() {
+      const token = localStorage.getItem('token');
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    },
     formatPatientName(patient) {
       const first = patient?.firstName || '';
       const last = patient?.lastName || '';
@@ -231,7 +235,7 @@ export default {
     async fetchPatients() {
       this.isLoadingPatients = true;
       try {
-        const response = await axios.get(`${API_URL}/patients`);
+        const response = await axios.get(`${API_URL}/patients`, { headers: this.authHeaders() });
         this.patients = response.data;
       } catch (error) {
         console.error(error);
@@ -244,7 +248,7 @@ export default {
       if (!id) return;
       this.isLoadingDetail = true;
       try {
-        const response = await axios.get(`${API_URL}/patients/${id}`);
+        const response = await axios.get(`${API_URL}/patients/${id}`, { headers: this.authHeaders() });
         this.patientDetail = response.data;
       } catch (error) {
         console.error(error);
@@ -263,8 +267,8 @@ export default {
     async deletePatient(patientId) {
       try {
         const deleted = this.patients.find(patient => patient._id === patientId);
-        await axios.delete(`${API_URL}/patients/${patientId}`);
-        await axios.delete(`${API_URL}/appointments/patient/${patientId}`);
+        await axios.delete(`${API_URL}/patients/${patientId}`, { headers: this.authHeaders() });
+        await axios.delete(`${API_URL}/appointments/patient/${patientId}`, { headers: this.authHeaders() });
         this.patients = this.patients.filter(patient => patient._id !== patientId);
         if (this.selectedPatientId === patientId) {
           this.selectedPatientId = null;
@@ -300,7 +304,7 @@ export default {
 
       if (this.patientFirstName !== '' && this.lastName !== '' && this.dateOfBirth !== '' && this.sex !== '' && this.address !== '' && this.phoneNum !== '' && this.email !== '' && this.emergencyContactName !== '' && this.emergencyContactRelationship !== '' && this.emergencyContactPhone !== '' && this.cardNumber !== '') {
         try {
-          await axios.post(`${API_URL}/patients`, newPatient);
+          await axios.post(`${API_URL}/patients`, newPatient, { headers: this.authHeaders() });
           this.successMessage = 'New patient added successfully.';
           this.errorMessage = '';
           this.resetForm();

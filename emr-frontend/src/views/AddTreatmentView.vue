@@ -249,6 +249,10 @@ export default {
     }
   },
   methods: {
+    authHeaders() {
+      const token = localStorage.getItem('token');
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    },
     async allDrugs() {
       const response = await axios.get(`https://health-products.canada.ca/api/drug/drugproduct/?lang=en&type=json`)
       this.drugs = response.data;
@@ -273,7 +277,9 @@ export default {
     },
     async getPatient() {
       try {
-        const response = await axios.get(`${API_URL}/patients/${this.$route.params.patient}`);
+        const response = await axios.get(`${API_URL}/patients/${this.$route.params.patient}`, {
+          headers: this.authHeaders(),
+        });
         this.patient = response.data;
       } catch (error) {
         console.error("Failed to fetch patient data:", error);
@@ -306,13 +312,19 @@ export default {
           this.newTreatment.endDate = 'N/A';
         }
         try {
-          const response = await axios.post(`${API_URL}/treatments`, this.newTreatment);
+          const response = await axios.post(`${API_URL}/treatments`, this.newTreatment, {
+            headers: this.authHeaders(),
+          });
           const treatmentID = response.data._id;
-          const patientResponse = await axios.get(`${API_URL}/patients/${this.$route.params.patient}`);
+          const patientResponse = await axios.get(`${API_URL}/patients/${this.$route.params.patient}`, {
+            headers: this.authHeaders(),
+          });
           const treatments = patientResponse.data.treatments;
           treatments.push(treatmentID);
 
-          await axios.put(`${API_URL}/patients/${this.$route.params.patient}`, { treatments });
+          await axios.put(`${API_URL}/patients/${this.$route.params.patient}`, { treatments }, {
+            headers: this.authHeaders(),
+          });
           this.clearTreatmentForm();
           this.goBack();
         } catch (error) {

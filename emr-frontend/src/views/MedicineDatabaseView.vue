@@ -285,6 +285,9 @@
 import { computed, onMounted, ref } from 'vue'
 
 const API_URL = import.meta.env.VITE_API_URL
+const token = localStorage.getItem('token')
+
+const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {})
 
 const treatments = ref([])
 const isLoading = ref(false)
@@ -329,7 +332,7 @@ const readJsonSafe = async (response) => {
 const loadTreatments = async () => {
   isLoading.value = true
   try {
-    const response = await fetch(`${API_URL}/treatments`)
+    const response = await fetch(`${API_URL}/treatments`, { headers: authHeaders() })
     treatments.value = response.ok ? await readJsonSafe(response) : []
   } catch {
     treatments.value = []
@@ -362,7 +365,7 @@ const createTreatment = async () => {
   try {
     const response = await fetch(`${API_URL}/treatments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(newTreatment.value),
     })
     if (!response.ok) throw new Error('Failed')
@@ -418,7 +421,7 @@ const saveEdit = async (id) => {
   try {
     const response = await fetch(`${API_URL}/treatments/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(editTreatment.value),
     })
     if (!response.ok) throw new Error('Failed')
@@ -431,7 +434,7 @@ const saveEdit = async (id) => {
 
 const deleteTreatment = async (id) => {
   try {
-    const response = await fetch(`${API_URL}/treatments/${id}`, { method: 'DELETE' })
+    const response = await fetch(`${API_URL}/treatments/${id}`, { method: 'DELETE', headers: authHeaders() })
     if (!response.ok) throw new Error('Failed')
     await loadTreatments()
   } catch {

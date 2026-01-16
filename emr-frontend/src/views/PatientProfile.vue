@@ -9,13 +9,14 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button
+            v-if="isDoctor"
             class="inline-flex h-11 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 text-sm"
             @click="goBack"
           >
             Back to Patients
           </button>
           <button
-            v-if="token"
+            v-if="isDoctor"
             class="inline-flex h-11 items-center justify-center rounded-xl bg-[color:var(--accent)] px-4 text-sm font-semibold text-[#06201B]"
             @click="openContactOverlay(true)"
           >
@@ -102,7 +103,7 @@
             <h2 class="text-lg font-semibold">Conditions & Treatments</h2>
             <p class="text-sm text-[color:var(--muted)]">Clinical treatments assigned to this patient.</p>
           </div>
-          <div class="flex flex-wrap items-center gap-2" v-if="token">
+          <div class="flex flex-wrap items-center gap-2" v-if="isDoctor">
             <button
               class="inline-flex h-10 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 text-sm"
               @click="openTreatmentForm(true)"
@@ -145,7 +146,7 @@
                 <td class="px-3 py-2">{{ treatment.prescribingPhysician || 'N/A' }}</td>
                 <td class="px-3 py-2 text-right">
                   <button
-                    v-if="token"
+                    v-if="isDoctor"
                     class="inline-flex h-9 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 text-xs text-[color:var(--error)]"
                     @click="clearTreatment(treatment)"
                   >
@@ -168,7 +169,7 @@
             <p class="text-sm text-[color:var(--muted)]">Visit history and upcoming schedule.</p>
           </div>
           <button
-            v-if="token"
+            v-if="isDoctor"
             class="inline-flex h-10 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-4 text-sm"
             @click="sendToAppointmentPage"
           >
@@ -195,7 +196,7 @@
                 <td class="px-3 py-2">{{ appointment.endTime || 'N/A' }}</td>
                 <td class="px-3 py-2 text-right">
                   <button
-                    v-if="token"
+                    v-if="isDoctor"
                     class="inline-flex h-9 items-center justify-center rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-2)] px-3 text-xs text-[color:var(--error)]"
                     @click="deleteAppointment(appointment)"
                   >
@@ -328,9 +329,13 @@ export default {
       libraryTreatments: [],
       libraryMessage: '',
       token: null,
+      role: null,
     };
   },
   computed: {
+    isDoctor() {
+      return this.role !== 'patient';
+    },
     patientName() {
       if (!this.patient) return "Patient";
       return `${this.patient.firstName || ""} ${this.patient.lastName || ""}`.trim() || "Patient";
@@ -504,6 +509,12 @@ export default {
   },
   created() {
     this.token = localStorage.getItem("token");
+    try {
+      const storedUser = localStorage.getItem("user");
+      this.role = storedUser ? JSON.parse(storedUser)?.role : null;
+    } catch {
+      this.role = null;
+    }
     this.fetchPatient();
     this.fetchAppointments();
   },

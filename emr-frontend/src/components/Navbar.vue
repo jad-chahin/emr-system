@@ -54,10 +54,11 @@
 
         <!-- Center: Primary links (desktop) -->
         <div class="hidden md:flex items-center gap-1">
-          <NavLink v-if="isAuthed" to="/app/dashboard">Dashboard</NavLink>
+          <NavLink v-if="isDoctor" to="/app/dashboard">Dashboard</NavLink>
           <NavLink v-if="!isAuthed" to="/search-patient">Patient Login</NavLink>
-          <NavLink v-if="isAuthed" to="/patients">Patients</NavLink>
-          <NavLink v-if="isAuthed" to="/calendar">Appointments</NavLink>
+          <NavLink v-if="isDoctor" to="/patients">Patients</NavLink>
+          <NavLink v-if="isDoctor" to="/calendar">Appointments</NavLink>
+          <NavLink v-if="isPatient" :to="patientHome">My Profile</NavLink>
         </div>
 
         <!-- Right: Auth actions -->
@@ -136,10 +137,11 @@
         <div class="pb-4 pt-2">
           <div class="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-1)] p-2">
             <div class="grid gap-1">
-              <MobileNavLink v-if="isAuthed" to="/app/dashboard" @click="closeMenu">Dashboard</MobileNavLink>
+              <MobileNavLink v-if="isDoctor" to="/app/dashboard" @click="closeMenu">Dashboard</MobileNavLink>
               <MobileNavLink v-if="!isAuthed" to="/search-patient" @click="closeMenu">Patient Login</MobileNavLink>
-              <MobileNavLink v-if="isAuthed" to="/patients" @click="closeMenu">Patients</MobileNavLink>
-              <MobileNavLink v-if="isAuthed" to="/calendar" @click="closeMenu">Appointments</MobileNavLink>
+              <MobileNavLink v-if="isDoctor" to="/patients" @click="closeMenu">Patients</MobileNavLink>
+              <MobileNavLink v-if="isDoctor" to="/calendar" @click="closeMenu">Appointments</MobileNavLink>
+              <MobileNavLink v-if="isPatient" :to="patientHome" @click="closeMenu">My Profile</MobileNavLink>
             </div>
 
             <div class="my-2 border-t border-[color:var(--border)]"></div>
@@ -199,8 +201,34 @@ const route = useRoute()
 
 const isOpen = ref(false)
 const token = ref(localStorage.getItem('token'))
+const storedUser = ref(null)
 const isAuthed = computed(() => !!token.value)
-const homeLink = computed(() => (isAuthed.value ? '/app/dashboard' : '/'))
+const decodeRoleFromToken = () => {
+  const current = token.value
+  if (!current) return null
+  const parts = current.split('.')
+  if (parts.length < 2) return null
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4)
+    const payload = JSON.parse(atob(padded))
+    return payload?.role || null
+  } catch {
+    return null
+  }
+}
+
+const role = computed(() => storedUser.value?.role || decodeRoleFromToken())
+const isDoctor = computed(() => isAuthed.value && role.value === 'doctor')
+const isPatient = computed(() => role.value === 'patient')
+const patientHome = computed(() => {
+  const id = storedUser.value?._id || storedUser.value?.id
+  return id ? `/app/patients/${id}` : '/search-patient'
+})
+const homeLink = computed(() => {
+  if (!isAuthed.value) return '/'
+  return isPatient.value ? patientHome.value : '/app/dashboard'
+})
 
 function toggleMenu() {
   isOpen.value = !isOpen.value
@@ -211,6 +239,16 @@ function closeMenu() {
 
 function syncToken() {
   token.value = localStorage.getItem('token')
+  const raw = localStorage.getItem('user')
+  if (!raw) {
+    storedUser.value = null
+    return
+  }
+  try {
+    storedUser.value = JSON.parse(raw)
+  } catch {
+    storedUser.value = null
+  }
 }
 
 function logout() {
@@ -221,6 +259,7 @@ function logout() {
 }
 
 onMounted(() => {
+  syncToken()
   window.addEventListener('storage', syncToken)
 })
 onBeforeUnmount(() => {
@@ -232,6 +271,7 @@ watch(
   () => route.path,
   () => {
     isOpen.value = false
+    syncToken()
   }
 )
 

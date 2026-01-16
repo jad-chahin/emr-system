@@ -15,6 +15,7 @@ const Appointment = require("./models/Appointment");
 
 const UserRouter = require("./routes/user.js");
 const PatientAuthRouter = require("./routes/patient.js");
+const { authenticate, requireRole } = require("./middleware/auth.js");
 
 const app = express();
 dotenv.config();
@@ -40,7 +41,7 @@ app.use("/user", UserRouter);
 app.use("/patient", PatientAuthRouter);
 
 // Create a new patient
-app.post("/patients", async (req, res, next) => {
+app.post("/patients", authenticate, requireRole(["doctor"]), async (req, res, next) => {
     try {
         const newPatient = new Patient(req.body);
         await newPatient.save();
@@ -51,7 +52,7 @@ app.post("/patients", async (req, res, next) => {
 });
 
 // Read all patients
-app.get("/patients", async (req, res, next) => {
+app.get("/patients", authenticate, requireRole(["doctor"]), async (req, res, next) => {
     try {
         const patients = await Patient.find();
         res.status(200).send(patients);
@@ -61,8 +62,11 @@ app.get("/patients", async (req, res, next) => {
 });
 
 // Read a single patient by ID
-app.get("/patients/:id", async (req, res, next) => {
+app.get("/patients/:id", authenticate, async (req, res, next) => {
     try {
+        if (req.user?.role === "patient" && req.user?.id !== req.params.id) {
+            return res.status(403).send({ message: "Forbidden" });
+        }
         const patient = await Patient.findById(req.params.id)
         .populate("treatments");
         if (!patient) {
@@ -75,8 +79,19 @@ app.get("/patients/:id", async (req, res, next) => {
 });
 
 // Update a patient by ID
-app.put("/patients/:id", async (req, res, next) => {
+app.put("/patients/:id", authenticate, async (req, res, next) => {
     try {
+        if (req.user?.role === "patient") {
+            if (req.user?.id !== req.params.id) {
+                return res.status(403).send({ message: "Forbidden" });
+            }
+            const keys = Object.keys(req.body || {});
+            const allowed = ["contactPreference"];
+            const isAllowed = keys.every((key) => allowed.includes(key));
+            if (!isAllowed) {
+                return res.status(403).send({ message: "Forbidden" });
+            }
+        }
         const updatedPatient = await Patient.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!updatedPatient) {
             return res.status(404).send({ message: "Patient not found" });
@@ -88,7 +103,7 @@ app.put("/patients/:id", async (req, res, next) => {
 });
 
 // Delete a patient by ID
-app.delete("/patients/:id", async (req, res, next) => {
+app.delete("/patients/:id", authenticate, requireRole(["doctor"]), async (req, res, next) => {
     try {
         const deletedPatient = await Patient.findByIdAndDelete(req.params.id);
         if (!deletedPatient) {
@@ -101,7 +116,7 @@ app.delete("/patients/:id", async (req, res, next) => {
 });
 
 // Add an appointment
-app.post("/appointments", async (req, res) => {
+app.post("/appointments", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         let patient = null;
         let patientName = req.body.patientName || '';
@@ -141,7 +156,7 @@ app.post("/appointments", async (req, res) => {
 });
 
 // Gets all appointments
-app.get('/calendar/appointments', async (req, res) => {
+app.get('/calendar/appointments', authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const appointments = await Appointment.find({ date: req.query.date }).populate('patient');
         res.status(200).send(appointments);
@@ -150,9 +165,10 @@ app.get('/calendar/appointments', async (req, res) => {
     }
 });
 
-app.get('/appointments', async (req, res) => {
+app.get('/appointments', authenticate, async (req, res) => {
     try {
-        const appointments = await Appointment.find();
+        const filter = req.user?.role === "patient" ? { patient: req.user.id } : {};
+        const appointments = await Appointment.find(filter);
         res.status(200).send(appointments)
     } catch (error) {
         res.status(500).send({ message : error.message})
@@ -160,11 +176,14 @@ app.get('/appointments', async (req, res) => {
 })
 
 // Get a single appointment by id
-app.get("/appointments/:id", async (req, res) => {
+app.get("/appointments/:id", authenticate, async (req, res) => {
     try {
         const appointment = await Appointment.findById(req.params.id);
         if (!appointment) {
             return res.status(404).send({ message: "Appointment not found" });
+        }
+        if (req.user?.role === "patient" && String(appointment.patient) !== req.user?.id) {
+            return res.status(403).send({ message: "Forbidden" });
         }
         res.status(200).send(appointment);
     } catch (error) {
@@ -173,7 +192,7 @@ app.get("/appointments/:id", async (req, res) => {
 });
 
 // Update an appointment by id
-app.put("/appointments/:id", async (req, res) => {
+app.put("/appointments/:id", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const updatedAppointment = await Appointment.findByIdAndUpdate(
             req.params.id,
@@ -190,7 +209,7 @@ app.put("/appointments/:id", async (req, res) => {
 });
 
 // Remove an appointment by id
-app.delete("/appointments/:id", async (req, res) => {
+app.delete("/appointments/:id", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const deletedAppointment = await Appointment.findByIdAndDelete(req.params.id);
         if (!deletedAppointment) {
@@ -203,7 +222,7 @@ app.delete("/appointments/:id", async (req, res) => {
 });
 
 // delete an appointment 
-app.delete("/appointments/patient/:patientId", async (req, res) => {
+app.delete("/appointments/patient/:patientId", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const result = await Appointment.deleteMany({ patient: req.params.patientId });
         if (result.deletedCount === 0) {
@@ -228,7 +247,7 @@ app.listen(port, () => {
 });
 
 // Create a new treatment
-app.post("/treatments", async (req, res) => {
+app.post("/treatments", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const newTreatment = new Medicine(req.body);
         await newTreatment.save();
@@ -239,7 +258,7 @@ app.post("/treatments", async (req, res) => {
 });
 
 // Get all treatments
-app.get("/treatments", async (req, res) => {
+app.get("/treatments", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const treatments = await Medicine.find();
         res.status(200).send(treatments);
@@ -249,7 +268,7 @@ app.get("/treatments", async (req, res) => {
 });
 
 // Get treatment by ID
-app.get("/treatments/:id", async (req, res) => {
+app.get("/treatments/:id", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const treatment = await Medicine.findById(req.params.id);
         if (!treatment) {
@@ -262,7 +281,7 @@ app.get("/treatments/:id", async (req, res) => {
 });
 
 // Update a treatment by ID
-app.put("/treatments/:id", async (req, res) => {
+app.put("/treatments/:id", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const updatedTreatment = await Medicine.findByIdAndUpdate(
             req.params.id,
@@ -279,7 +298,7 @@ app.put("/treatments/:id", async (req, res) => {
 });
 
 // Delete a treatment by ID
-app.delete("/treatments/:id", async (req, res) => {
+app.delete("/treatments/:id", authenticate, requireRole(["doctor"]), async (req, res) => {
     try {
         const deletedTreatment = await Medicine.findByIdAndDelete(req.params.id);
         if (!deletedTreatment) {
@@ -309,7 +328,7 @@ async function sendSMS(to, message) {
     console.log('SMS sent successfully!', response.sid);
 }
 
-app.post('/send-sms', async (req, res) => {
+app.post('/send-sms', authenticate, requireRole(["doctor"]), async (req, res) => {
     const { to, message } = req.body;
     try {
         if (!to || !message) {
@@ -357,7 +376,7 @@ async function sendEmail(to, subject, text) {
     }
 }
 
-app.post('/send-email', async (req, res) => {
+app.post('/send-email', authenticate, requireRole(["doctor"]), async (req, res) => {
     const { to, subject, text } = req.body
     try {
         if (!to || !subject || !text) {
