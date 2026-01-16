@@ -18,8 +18,7 @@ Backend:
 ```
 cd emr-backend
 npm install
-cd server
-node index.js
+node server/index.js
 ```
 
 ## Environment
