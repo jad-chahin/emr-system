@@ -22,7 +22,14 @@ dotenv.config();
 const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(morgan('dev'));
-app.use(cors());
+const corsOptions = {
+    origin: ["https://emr-application-5i8r.onrender.com", "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+};
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -340,8 +347,14 @@ async function sendEmail(to, subject, text) {
         text: text
     }
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('email sent successfully', info.response);
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log('email sent successfully', info.response);
+        return info;
+    } catch (error) {
+        console.error('Failed to send email', error);
+        throw error;
+    }
 }
 
 app.post('/send-email', async (req, res) => {
