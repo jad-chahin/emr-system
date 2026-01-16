@@ -14,6 +14,7 @@ const Appointment = require("./models/Appointment");
 //const Medicine = require('./models/Condition');
 
 const UserRouter = require("./routes/user.js");
+const PatientAuthRouter = require("./routes/patient.js");
 
 const app = express();
 dotenv.config();
@@ -29,6 +30,7 @@ mongoose.connect(process.env.MONGO_URI, {
 });
 
 app.use("/user", UserRouter);
+app.use("/patient", PatientAuthRouter);
 
 // Create a new patient
 app.post("/patients", async (req, res, next) => {
@@ -90,70 +92,6 @@ app.delete("/patients/:id", async (req, res, next) => {
         next(error);
     }
 });
-
-// Create a new condition
-// app.post("/conditions", async (req, res) => {
-//     try {
-//         const newCondition = new Condition(req.body);
-//         await newCondition.save();
-//         res.status(201).send(newCondition);
-//     } catch (error) {
-//         res.status(400).send({ message: error.message });
-//     }
-// });
-
-// Get all conditions
-// app.get("/conditions", async (req, res) => {
-//     try {
-//         const conditions = await Condition.find();
-//         res.status(200).send(conditions);
-//     } catch (error) {
-//         res.status(500).send({ message: error.message });
-//     }
-// });
-
-// // Get condition by ID
-// app.get("/conditions/:id", async (req, res) => {
-//     try {
-//         const condition = await Condition.findById(req.params.id);
-//         if (!condition) {
-//             return res.status(404).send({ message: "Condition not found" });
-//         }
-//         res.status(200).send(condition);
-//     } catch (error) {
-//         res.status(500).send({ message: error.message });
-//     }
-// });
-
-// // Update a condition by ID
-// app.put("/conditions/:id", async (req, res) => {
-//     try {
-//         const updatedCondition = await Condition.findByIdAndUpdate(
-//             req.params.id,
-//             req.body,
-//             { new: true, runValidators: true }
-//         );
-//         if (!updatedCondition) {
-//             return res.status(404).send({ message: "Condition not found" });
-//         }
-//         res.status(200).send(updatedCondition);
-//     } catch (error) {
-//         res.status(400).send({ message: error.message });
-//     }
-// });
-
-// // Delete a condition by ID
-// app.delete("/conditions/:id", async (req, res) => {
-//     try {
-//         const deletedCondition = await Condition.findByIdAndDelete(req.params.id);
-//         if (!deletedCondition) {
-//             return res.status(404).send({ message: "Condition not found" });
-//         }
-//         res.status(200).send(deletedCondition);
-//     } catch (error) {
-//         res.status(500).send({ message: error.message });
-//     }
-// });
 
 // Add an appointment
 app.post("/appointments", async (req, res) => {
@@ -349,10 +287,17 @@ app.delete("/treatments/:id", async (req, res) => {
 // twillio notifications
 
 async function sendSMS(to, message) {
+    if (!twilioClient) {
+        throw new Error("Twilio is not configured.");
+    }
+    const from = process.env.TWILIO_FROM;
+    if (!from) {
+        throw new Error('Missing "TWILIO_FROM".');
+    }
     const response = await twilioClient.messages.create({
         body: message,
         to: to,  // Text this number
-        from: '+13855577185' // From a valid Twilio number
+        from: from // From a valid Twilio number
     });
     console.log('SMS sent successfully!', response.sid);
 }
@@ -362,6 +307,9 @@ app.post('/send-sms', async (req, res) => {
     try {
         if (!to || !message) {
             return res.status(400).send({ message: 'Missing "to" or "message".' });
+        }
+        if (!twilioClient || !process.env.TWILIO_FROM) {
+            return res.status(500).send({ message: 'Twilio is not configured.' });
         }
         await sendSMS(to, message);
         res.status(200).send({ message: 'SMS sent successfully!' });
@@ -382,6 +330,9 @@ let transporter = nodemailer.createTransport({
 });
 
 async function sendEmail(to, subject, text) {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        throw new Error("Email service is not configured.");
+    }
     let mailOptions = {
         from: process.env.EMAIL_USER,
         to: to,
@@ -412,6 +363,9 @@ app.post('/send-email', async (req, res) => {
 
 cron.schedule('0 3 * * *', async () => { // runs at 3 am every day
     try {
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            return;
+        }
         let date = (new Date()).toLocaleDateString()
         const appointments = await Appointment.find({ date: date }).populate('patient');
 

@@ -48,10 +48,13 @@
 
           <div class="flex justify-center">
             <button
-              class="inline-flex h-11 items-center justify-center rounded-xl bg-[color:var(--accent)] px-8 text-sm font-semibold text-[#06201B]"
+              class="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[color:var(--accent)] px-8 text-sm font-semibold text-[#06201B]
+                     disabled:cursor-not-allowed disabled:opacity-80"
               type="submit"
+              :disabled="loading"
             >
-              Search
+              <span v-if="loading" class="h-4 w-4 animate-spin rounded-full border-2 border-[#06201B] border-t-transparent"></span>
+              <span>{{ loading ? 'Searching...' : 'Search' }}</span>
             </button>
           </div>
         </form>
@@ -76,7 +79,6 @@ export default {
       address: '',
       sex: '',
       cardNumber: '',
-      patients: [],
       conditions: [],
       selectedConditions: [],
       filteredPatients: [],
@@ -87,43 +89,44 @@ export default {
       emergencyContactRelationship: '',
       emergencyContactPhone: '',
       successMessage: '',
-      errorMessage: ''
+      errorMessage: '',
+      loading: false
     };
   },
   methods: {
-    async fetchPatients() {
+    async submitForm() {
+      this.errorMessage = "";
+      this.successMessage = "";
+      this.loading = true;
+
       try {
-        const response = await axios.get(`${API_URL}/patients`);
-        this.patients = response.data;
+        const response = await axios.post(`${API_URL}/patient/signin`, {
+          firstName: this.patientFirstName,
+          lastName: this.lastName,
+          cardNumber: this.cardNumber,
+        });
+
+        const { result, token } = response.data || {};
+
+        if (token) {
+          localStorage.setItem("token", token);
+        }
+        if (result) {
+          localStorage.setItem("user", JSON.stringify(result));
+        }
+
+        if (result?._id) {
+          this.$router.push({ name: 'PatientProfile', params: { patient: result._id } });
+        } else {
+          this.errorMessage = "No result!";
+        }
       } catch (error) {
         console.error(error);
-      }
-    },
-    submitForm() {
-      this.filteredPatients = this.patients.filter(patient => {
-        const firstNameMatch = patient.firstName.toLowerCase() === this.patientFirstName.toLowerCase();
-        const lastNameMatch = patient.lastName.toLowerCase() === this.lastName.toLowerCase();
-        const cardNumberMatch = patient.cardNumber.toLowerCase() === this.cardNumber.toLowerCase();
-        return firstNameMatch && lastNameMatch && cardNumberMatch;
-      });
-
-      if (this.filteredPatients.length === 0) {
         this.errorMessage = "No result!";
-        this.successMessage = "";
-      } else {
-        this.errorMessage = "";
-        this.$router.push({ name: 'PatientProfile', params: { patient: this.filteredPatients[0]._id } });
+      } finally {
+        this.loading = false;
       }
     },
   },
-  created() {
-    this.fetchPatients();
-    let storedResults = localStorage.getItem('searchResults');
-    let storedState = localStorage.getItem('searchState');
-    if (storedResults && storedState) {
-      this.filteredPatients = JSON.parse(storedResults);
-      Object.assign(this, JSON.parse(storedState));
-    }
-  }
 };
 </script>

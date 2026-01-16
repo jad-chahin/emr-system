@@ -61,10 +61,13 @@
 
               <button
                 type="submit"
-                class="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl bg-[color:var(--accent)] text-sm font-semibold text-[#06201B]
-                       hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
+                class="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[color:var(--accent)] text-sm font-semibold text-[#06201B]
+                       hover:brightness-110 active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]
+                       disabled:cursor-not-allowed disabled:opacity-80"
+                :disabled="loading"
               >
-                Log in
+                <span v-if="loading" class="h-4 w-4 animate-spin rounded-full border-2 border-[#06201B] border-t-transparent"></span>
+                <span>{{ loading ? 'Logging in...' : 'Log in' }}</span>
               </button>
             </form>
 
@@ -119,13 +122,15 @@ export default {
         role: 'doctor'
       },
       successMessage: '',
-      errorMessage: ''
+      errorMessage: '',
+      loading: false
     };
   },
   methods: {
     async login() {
       this.successMessage = '';
       this.errorMessage = '';
+      this.loading = true;
       const accountData = {
         ...this.account,
         email: this.account.email.toLowerCase()
@@ -165,6 +170,8 @@ export default {
       } catch (error) {
         console.error('Error:', error);
         this.errorMessage = 'Something went wrong. Please try again later.';
+      } finally {
+        this.loading = false;
       }
     }
   }
