@@ -284,15 +284,6 @@ export default {
         });
 
         appointments.value = response.data;
-        appointments.value.forEach(async (a) => {
-          if (typeof a.patient !== 'string') {
-            return;
-          }
-          const id = a.patient;
-          a.patient = await axios.get(`${API_URL}/patients/${id}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          });
-        });
         sortTimeEariliest();
       } catch (error) {
         console.error("Error getting data from getAppointments", error);
