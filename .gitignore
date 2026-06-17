@@ -1,2 +1,17 @@
 /node_modules/
 /.idea/
+
+# Local environment
+.env
+.env.local
+.env.development
+.env.production
+
+# Local editor files
+.idea/
+.vscode/
+*.iml
+
+# OS metadata
+.DS_Store
+Thumbs.db
