@@ -1,7 +1,24 @@
-# Vue 3 + Vite
+# EMR Frontend
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Vue 3 + Vite frontend for the EMR Suite clinical workspace.
 
-## Recommended IDE Setup
+## Local Development
 
-- [VS Code](https://code.visualstudio.com/) + [Vue - Official](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (previously Volar) and disable Vetur
+```bash
+cd emr-frontend
+npm install
+npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Environment
+
+- `VITE_API_URL`: backend API base URL
+
+See the root `README.md` for full frontend and backend setup.
