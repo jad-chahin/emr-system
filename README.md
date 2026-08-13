@@ -2,9 +2,6 @@
 
 Modern clinical workspace built with a MEVN stack. Tailwind UI for the frontend and Express/MongoDB on the backend.
 
-Live demo:
-- https://emr-application-5i8r.onrender.com
-
 ## Quick start
 
 Frontend:
